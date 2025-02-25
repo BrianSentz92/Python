@@ -1,0 +1,81 @@
+import turtle
+
+# Set up the drawing board
+screen = turtle.Screen()
+screen.bgcolor("lightblue")  # Light blue background
+
+# Create the drawing turtle
+t = turtle.Turtle()
+t.speed(5)
+
+
+# Function to draw a flower stem
+def draw_stem(x, y):
+    t.penup()
+    t.goto(x, y)
+    t.pendown()
+    t.pensize(5)
+    t.pencolor("green")
+    t.setheading(90)  # Point upwards
+    t.forward(100)  # Draw the stem
+
+
+# Function to draw a tulip petal
+def draw_tulip_petal(x, y, angle, color):
+    t.penup()
+    t.goto(x, y + 100)  # Position at the top of the stem
+    t.pendown()
+    t.pencolor(color)
+    t.fillcolor(color)
+    t.begin_fill()
+    t.setheading(angle)
+    t.circle(20, 90)  # Curve of petal
+    t.setheading(angle - 180)
+    t.circle(20, 90)
+    t.end_fill()
+
+
+# Function to draw a leaf
+def draw_leaf(x, y):
+    t.penup()
+    t.goto(x, y + 40)
+    t.pendown()
+    t.pencolor("green")
+    t.fillcolor("green")
+    t.begin_fill()
+    t.setheading(-45)
+    t.circle(20, 90)
+    t.setheading(-135)
+    t.circle(20, 90)
+    t.end_fill()
+
+
+# Function to draw a tulip
+def draw_tulip(x, y, color):
+    draw_stem(x, y)
+    draw_tulip_petal(x, y, 45, color)
+    draw_tulip_petal(x, y, 135, color)
+    draw_leaf(x, y)
+
+
+# Function to draw a bouquet of tulips
+def draw_bouquet():
+    positions = [-120, -60, 0, 60, 120]  # X positions for flowers
+    colors = ["red", "yellow"]  # Alternating colors
+
+    for i in range(5):
+        draw_tulip(positions[i], -200, colors[i % 2])
+
+
+# Draw the bouquet
+draw_bouquet()
+
+# Write the message
+t.penup()
+t.goto(-80, 50)
+t.pencolor("darkred")
+t.write("I love you, Whitney!", font=("Arial", 16, "bold"))
+
+# Finish
+t.hideturtle()
+turtle.done()
