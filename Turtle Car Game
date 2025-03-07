@@ -1,0 +1,99 @@
+import turtle
+import time
+import random
+
+# Set up the screen
+screen = turtle.Screen()
+screen.setup(width=800, height=600)
+screen.bgcolor("Yellow")
+screen.title("Am I Turtley Enough For The Turtle Club?")
+screen.tracer(0)  # Turn off automatic updates for smoother animation
+
+# Create player turtle
+player = turtle.Turtle()
+player.shape("turtle")
+player.penup()
+player.goto(0, -250)  # Start at bottom
+player.setheading(90)  # Face upwards
+
+# Scoreboard
+scoreboard = turtle.Turtle()
+scoreboard.hideturtle()
+scoreboard.penup()
+scoreboard.goto(-350, 260)
+scoreboard.write("Level: 1", align="left", font=("Arial", 18, "bold"))
+
+# Game Over text
+game_over_text = turtle.Turtle()
+game_over_text.hideturtle()
+game_over_text.penup()
+game_over_text.color("red")
+
+# Car class
+class Car(turtle.Turtle):
+    def __init__(self, speed):
+        super().__init__()
+        self.shape("square")
+        self.shapesize(stretch_wid=1, stretch_len=2)  # Make it rectangular
+        self.penup()
+        self.color(random.choice(["red", "blue", "green", "black", "purple"]))
+        self.goto(400, random.randint(-250, 250))  # Start off-screen
+        self.speed = speed
+
+    def move(self):
+        self.backward(self.speed)  # Move left
+
+# Game variables
+car_speed = 5
+cars = []
+level = 1
+game_is_on = True
+
+# Move turtle up
+def move_up():
+    player.forward(20)
+
+# Detect key press
+screen.listen()
+screen.onkey(move_up, "Up")
+
+# Function to update scoreboard
+def update_score():
+    scoreboard.clear()
+    scoreboard.write(f"Level: {level}", align="left", font=("Arial", 18, "bold"))
+
+# Game loop
+while game_is_on:
+    time.sleep(0.1)
+    screen.update()
+
+    # Generate cars randomly
+    if random.randint(1, 6) == 1:  # Adjust frequency of car spawns
+        cars.append(Car(car_speed))
+
+    # Move cars
+    for car in cars:
+        car.move()
+
+        # Detect collision with the player
+        if player.distance(car) < 20:
+            game_is_on = False
+            game_over_text.goto(-50, 0)
+            game_over_text.write("GAME OVER!", align="center", font=("Arial", 24, "bold"))
+            player.color("red")  # Indicate game over
+            print("Game Over!")
+
+        # Remove cars that go off-screen
+        if car.xcor() < -400:
+            car.hideturtle()
+            cars.remove(car)
+
+    # Check if player reaches the top
+    if player.ycor() > 280:
+        player.goto(0, -250)  # Reset position
+        level += 1
+        car_speed += 2  # Increase car speed
+        update_score()
+        print(f"Level up! Speed: {car_speed}")
+
+screen.mainloop()  # Keeps window open
