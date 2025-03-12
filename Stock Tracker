@@ -2,6 +2,7 @@ import sqlite3
 import time
 import random
 
+
 def create_database():
     conn = sqlite3.connect("stocks.db")
     cursor = conn.cursor()
@@ -13,12 +14,14 @@ def create_database():
     conn.commit()
     conn.close()
 
+
 def add_stock_price(stock_symbol, price):
     conn = sqlite3.connect("stocks.db")
     cursor = conn.cursor()
     cursor.execute("INSERT INTO stock_prices (stock_symbol, price) VALUES (?, ?)", (stock_symbol, price))
     conn.commit()
     conn.close()
+
 
 def view_stock_prices(stock_symbol=None):
     conn = sqlite3.connect("stocks.db")
@@ -31,6 +34,22 @@ def view_stock_prices(stock_symbol=None):
     conn.close()
     return stocks
 
+
+def generate_ascii_graph(stock_symbol):
+    stock_data = view_stock_prices(stock_symbol)
+    if not stock_data:
+        print("No stock data available for the selected stock.")
+        return
+
+    print(f"\nStock Price Trend for {stock_symbol}")
+    print("Timestamp".ljust(25) + "| Price")
+    print("-" * 40)
+
+    for stock in reversed(stock_data[-10:]):  # Show last 10 records
+        price_bar = "#" * int(stock[2] // 5)
+        print(f"{stock[3].ljust(25)}| {price_bar}")
+
+
 def simulate_stock_updates(stocks):
     while True:
         stock_symbol = random.choice(stocks)
@@ -39,6 +58,7 @@ def simulate_stock_updates(stocks):
         print(f"Updated {stock_symbol}: ${new_price}")
         time.sleep(5)
 
+
 def main():
     create_database()
     stocks = ["AAPL", "TSLA", "MSFT", "GOOGL", "AMZN", "NFLX", "META", "NVDA", "BRK.A", "JPM"]
@@ -46,8 +66,9 @@ def main():
     while True:
         print("\nStock Price Tracker")
         print("1. View Stock Prices")
-        print("2. Simulate Real-Time Stock Updates")
-        print("3. Exit")
+        print("2. Generate ASCII Graph for Stock")
+        print("3. Simulate Real-Time Stock Updates")
+        print("4. Exit")
         try:
             choice = input("Enter your choice: ")
             if choice == "1":
@@ -61,15 +82,19 @@ def main():
                 else:
                     print("No stock data available for the selected stock.")
             elif choice == "2":
+                stock_symbol = input("Enter a stock symbol to generate ASCII graph: ").upper()
+                generate_ascii_graph(stock_symbol)
+            elif choice == "3":
                 print("Simulating real-time stock updates...")
                 simulate_stock_updates(stocks)
-            elif choice == "3":
+            elif choice == "4":
                 print("Exiting program.")
                 break
             else:
                 print("Invalid choice. Please try again.")
         except ValueError:
             print("Invalid input. Please enter the correct data type.")
+
 
 if __name__ == "__main__":
     main()
