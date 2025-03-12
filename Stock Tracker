@@ -1,0 +1,75 @@
+import sqlite3
+import time
+import random
+
+def create_database():
+    conn = sqlite3.connect("stocks.db")
+    cursor = conn.cursor()
+    cursor.execute('''CREATE TABLE IF NOT EXISTS stock_prices (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        stock_symbol TEXT NOT NULL,
+                        price REAL,
+                        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP)''')
+    conn.commit()
+    conn.close()
+
+def add_stock_price(stock_symbol, price):
+    conn = sqlite3.connect("stocks.db")
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO stock_prices (stock_symbol, price) VALUES (?, ?)", (stock_symbol, price))
+    conn.commit()
+    conn.close()
+
+def view_stock_prices(stock_symbol=None):
+    conn = sqlite3.connect("stocks.db")
+    cursor = conn.cursor()
+    if stock_symbol:
+        cursor.execute("SELECT * FROM stock_prices WHERE stock_symbol = ? ORDER BY timestamp DESC", (stock_symbol,))
+    else:
+        cursor.execute("SELECT * FROM stock_prices ORDER BY timestamp DESC")
+    stocks = cursor.fetchall()
+    conn.close()
+    return stocks
+
+def simulate_stock_updates(stocks):
+    while True:
+        stock_symbol = random.choice(stocks)
+        new_price = round(random.uniform(100, 500), 2)
+        add_stock_price(stock_symbol, new_price)
+        print(f"Updated {stock_symbol}: ${new_price}")
+        time.sleep(5)
+
+def main():
+    create_database()
+    stocks = ["AAPL", "TSLA", "MSFT", "GOOGL", "AMZN", "NFLX", "META", "NVDA", "BRK.A", "JPM"]
+    print("Tracking stock prices for:", ", ".join(stocks))
+    while True:
+        print("\nStock Price Tracker")
+        print("1. View Stock Prices")
+        print("2. Simulate Real-Time Stock Updates")
+        print("3. Exit")
+        try:
+            choice = input("Enter your choice: ")
+            if choice == "1":
+                stock_symbol = input("Enter a stock symbol to filter (or press Enter to view all): ").upper()
+                stock_data = view_stock_prices(stock_symbol if stock_symbol else None)
+                if stock_data:
+                    print("\nID | Stock | Price | Timestamp")
+                    print("------------------------------------")
+                    for stock in stock_data:
+                        print(f"{stock[0]} | {stock[1]} | ${stock[2]:.2f} | {stock[3]}")
+                else:
+                    print("No stock data available for the selected stock.")
+            elif choice == "2":
+                print("Simulating real-time stock updates...")
+                simulate_stock_updates(stocks)
+            elif choice == "3":
+                print("Exiting program.")
+                break
+            else:
+                print("Invalid choice. Please try again.")
+        except ValueError:
+            print("Invalid input. Please enter the correct data type.")
+
+if __name__ == "__main__":
+    main()
