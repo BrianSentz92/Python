@@ -1,0 +1,99 @@
+import sqlite3
+
+
+def create_database():
+    conn = sqlite3.connect("employee.db")
+    cursor = conn.cursor()
+    cursor.execute('''CREATE TABLE IF NOT EXISTS employees (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        name TEXT NOT NULL,
+                        age INTEGER,
+                        department TEXT,
+                        salary REAL)''')
+    conn.commit()
+    conn.close()
+
+
+def add_employee(name, age, department, salary):
+    conn = sqlite3.connect("employee.db")
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO employees (name, age, department, salary) VALUES (?, ?, ?, ?)",
+                   (name, age, department, salary))
+    conn.commit()
+    conn.close()
+
+
+def view_employees():
+    conn = sqlite3.connect("employee.db")
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM employees")
+    employees = cursor.fetchall()
+    conn.close()
+    return employees
+
+
+def update_employee(emp_id, name, age, department, salary):
+    conn = sqlite3.connect("employee.db")
+    cursor = conn.cursor()
+    cursor.execute("UPDATE employees SET name = ?, age = ?, department = ?, salary = ? WHERE id = ?",
+                   (name, age, department, salary, emp_id))
+    conn.commit()
+    conn.close()
+
+
+def delete_employee(emp_id):
+    conn = sqlite3.connect("employee.db")
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM employees WHERE id = ?", (emp_id,))
+    conn.commit()
+    conn.close()
+
+
+def main():
+    create_database()
+    while True:
+        print("\nEmployee Database Management")
+        print("1. Add Employee")
+        print("2. View Employees")
+        print("3. Update Employee")
+        print("4. Delete Employee")
+        print("5. Exit")
+
+        try:
+            choice = input("Enter your choice: ")
+            if choice == "1":
+                name = input("Enter name: ")
+                age = int(input("Enter age: "))
+                department = input("Enter department: ")
+                salary = float(input("Enter salary: "))
+                add_employee(name, age, department, salary)
+            elif choice == "2":
+                employees = view_employees()
+                if employees:
+                    print("\nID | Name | Age | Department | Salary")
+                    print("-----------------------------------")
+                    for emp in employees:
+                        print(f"{emp[0]} | {emp[1]} | {emp[2]} | {emp[3]} | ${emp[4]:.2f}")
+                else:
+                    print("No employees found.")
+            elif choice == "3":
+                emp_id = int(input("Enter Employee ID to update: "))
+                name = input("Enter new name: ")
+                age = int(input("Enter new age: "))
+                department = input("Enter new department: ")
+                salary = float(input("Enter new salary: "))
+                update_employee(emp_id, name, age, department, salary)
+            elif choice == "4":
+                emp_id = int(input("Enter Employee ID to delete: "))
+                delete_employee(emp_id)
+            elif choice == "5":
+                print("Exiting program.")
+                break
+            else:
+                print("Invalid choice. Please try again.")
+        except ValueError:
+            print("Invalid input. Please enter the correct data type.")
+
+
+if __name__ == "__main__":
+    main()
