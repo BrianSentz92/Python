@@ -1,213 +1,208 @@
 import pygame
 import random
 
-# Initialize pygame
+# Initialize Pygame
 pygame.init()
 
-# Define colors
+# Set up display
+WIDTH, HEIGHT = 960, 540
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("Breakout Game")
+
+# Colors
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
-RED = (255, 0, 0)
-BLUE = (0, 0, 255)
-GREEN = (0, 255, 0)
+BLUE = (0, 100, 255)
+RED = (255, 50, 50)
+GREEN = (50, 255, 100)
+YELLOW = (255, 255, 100)
+ORANGE = (255, 165, 0)
 
-# Set screen size to 1280x720 (theater mode size)
-SCREEN_WIDTH = 1280
-SCREEN_HEIGHT = 720
-screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+# Fonts
+font = pygame.font.SysFont("Arial", 24)
+large_font = pygame.font.SysFont("Arial", 36)
 
-# Define paddle and ball properties
-PADDLE_WIDTH = 150
-PADDLE_HEIGHT = 10
-BALL_RADIUS = 8
-
-# Set up the clock
+# Clock
 clock = pygame.time.Clock()
+FPS = 60
 
-# Define font for score (increased size for readability)
-font = pygame.font.SysFont("Arial", 30)
+# Game variables
+lives = 3
+score = 0
+level = 1
+waiting_for_next_level = False
+fireball_mode = False
 
+# Paddle
+paddle_width, paddle_height = 100, 15
+paddle = pygame.Rect(WIDTH // 2 - paddle_width // 2, HEIGHT - 40, paddle_width, paddle_height)
+paddle_speed = 7
 
-# Paddle class
-class Paddle:
-    def __init__(self):
-        self.rect = pygame.Rect(
-            (SCREEN_WIDTH // 2 - PADDLE_WIDTH // 2, SCREEN_HEIGHT - 40, PADDLE_WIDTH, PADDLE_HEIGHT))
-        self.speed = 5
+# Ball
+ball_radius = 10
+ball_speed = [4, -4]
+balls = [pygame.Rect(WIDTH // 2, HEIGHT // 2, ball_radius * 2, ball_radius * 2)]
 
-    def move(self, dx):
-        self.rect.x += dx
-        if self.rect.left < 0:
-            self.rect.left = 0
-        elif self.rect.right > SCREEN_WIDTH:
-            self.rect.right = SCREEN_WIDTH
+# Bricks
+brick_rows = 6
+brick_cols = 12
+brick_width = WIDTH // brick_cols
+brick_height = 30
+brick_padding = 2
 
-    def draw(self, screen):
-        pygame.draw.rect(screen, BLUE, self.rect)
-
-
-# Ball class
-class Ball:
-    def __init__(self, speed_multiplier=1):
-        self.rect = pygame.Rect(SCREEN_WIDTH // 2 - BALL_RADIUS, SCREEN_HEIGHT // 2 - BALL_RADIUS, BALL_RADIUS * 2,
-                                BALL_RADIUS * 2)
-        self.dx = random.choice([3, -3]) * speed_multiplier
-        self.dy = -3 * speed_multiplier
-
-    def move(self):
-        self.rect.x += self.dx
-        self.rect.y += self.dy
-
-    def bounce(self):
-        self.dy = -self.dy
-
-    def draw(self, screen):
-        pygame.draw.circle(screen, RED, self.rect.center, BALL_RADIUS)
-
-
-# Brick class
-class Brick:
-    def __init__(self, x, y):
-        self.rect = pygame.Rect(x, y, 60, 20)
-
-    def draw(self, screen):
-        pygame.draw.rect(screen, GREEN, self.rect)
-
-
-# Function to reset the game state with more bricks for the next level
-def reset_game(level):
-    paddle = Paddle()
-    ball = Ball(speed_multiplier=1 + (level * 0.1))  # Increase ball speed as level increases
+def create_bricks():
     bricks = []
-
-    # Calculate the number of bricks based on the window size (1280x720)
-    brick_width = 60
-    brick_height = 20
-    padding = 10  # Padding between bricks
-
-    # Determine how many bricks can fit on the screen horizontally and vertically
-    num_bricks_x = (SCREEN_WIDTH - padding * 2) // (brick_width + padding)
-    num_bricks_y = (SCREEN_HEIGHT // 3) // (brick_height + padding)  # Top 1/3 of the screen for bricks
-
-    for i in range(num_bricks_y):
-        for j in range(num_bricks_x):
-            x_pos = padding + j * (brick_width + padding)
-            y_pos = padding + i * (brick_height + padding)
-            brick = Brick(x_pos, y_pos)
+    for row in range(brick_rows):
+        for col in range(brick_cols):
+            brick = pygame.Rect(
+                col * brick_width + brick_padding,
+                row * brick_height + brick_padding + 60,
+                brick_width - brick_padding * 2,
+                brick_height - brick_padding * 2
+            )
             bricks.append(brick)
+    return bricks
 
-    return paddle, ball, bricks
+bricks = create_bricks()
 
+# Power-ups
+powerups = []
+powerup_size = 20
+powerup_speed = 3
+powerup_types = ["paddle_expand", "multi_ball", "fireball"]
 
-# Function to display text centered on the screen
-def display_text(text, font, color, y_offset=0):
-    text_surface = font.render(text, True, color)
-    text_rect = text_surface.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + y_offset))
-    screen.blit(text_surface, text_rect)
+class PowerUp:
+    def __init__(self, x, y, type):
+        self.rect = pygame.Rect(x, y, powerup_size, powerup_size)
+        self.type = type
+        self.color = YELLOW if type == "paddle_expand" else ORANGE if type == "multi_ball" else RED
 
+    def draw(self):
+        pygame.draw.rect(screen, self.color, self.rect)
 
-# Main game loop
-def game_loop():
-    level = 0
-    paddle, ball, bricks = reset_game(level)
+    def update(self):
+        self.rect.y += powerup_speed
 
-    # Game variables
-    score = 0
-    game_over = False
+# Main loop
+running = True
+while running:
+    clock.tick(FPS)
+    screen.fill(BLACK)
 
-    # Main loop
-    while not game_over:
-        screen.fill(BLACK)
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
 
-        # Event handling
+    keys = pygame.key.get_pressed()
+    if keys[pygame.K_LEFT] and paddle.left > 0:
+        paddle.x -= paddle_speed
+    if keys[pygame.K_RIGHT] and paddle.right < WIDTH:
+        paddle.x += paddle_speed
+
+    if waiting_for_next_level:
+        text = large_font.render("Level Complete! Press N to continue", True, WHITE)
+        screen.blit(text, (WIDTH // 2 - text.get_width() // 2, HEIGHT // 2 - 50))
+        pygame.display.flip()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                game_over = True
+                running = False
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_n:
+                    level += 1
+                    bricks = create_bricks()
+                    paddle.width = 100
+                    fireball_mode = False
+                    balls = [pygame.Rect(WIDTH // 2, HEIGHT // 2, ball_radius * 2, ball_radius * 2)]
+                    ball_speed = [4, -4]
+                    waiting_for_next_level = False
+        continue
 
-        # Paddle movement
-        keys = pygame.key.get_pressed()
-        if keys[pygame.K_LEFT]:
-            paddle.move(-paddle.speed)
-        if keys[pygame.K_RIGHT]:
-            paddle.move(paddle.speed)
+    for ball in balls[:]:
+        ball.x += ball_speed[0]
+        ball.y += ball_speed[1]
 
-        # Ball movement
-        ball.move()
+        if ball.left <= 0 or ball.right >= WIDTH:
+            ball_speed[0] *= -1
+        if ball.top <= 0:
+            ball_speed[1] *= -1
+        if ball.bottom >= HEIGHT:
+            balls.remove(ball)
+            if not balls:
+                lives -= 1
+                balls = [pygame.Rect(WIDTH // 2, HEIGHT // 2, ball_radius * 2, ball_radius * 2)]
+                ball_speed = [4, -4]
+                fireball_mode = False
+                paddle.width = 100
+                if lives == 0:
+                    text = large_font.render("Game Over! Press R to Restart", True, RED)
+                    screen.blit(text, (WIDTH // 2 - text.get_width() // 2, HEIGHT // 2))
+                    pygame.display.flip()
+                    pygame.time.wait(1000)
+                    waiting = True
+                    while waiting:
+                        for event in pygame.event.get():
+                            if event.type == pygame.QUIT:
+                                running = False
+                                waiting = False
+                            elif event.type == pygame.KEYDOWN and event.key == pygame.K_r:
+                                lives = 3
+                                score = 0
+                                level = 1
+                                bricks = create_bricks()
+                                paddle.width = 100
+                                balls = [pygame.Rect(WIDTH // 2, HEIGHT // 2, ball_radius * 2, ball_radius * 2)]
+                                ball_speed = [4, -4]
+                                fireball_mode = False
+                                waiting = False
+                    continue
 
-        # Ball collisions with walls
-        if ball.rect.left <= 0 or ball.rect.right >= SCREEN_WIDTH:
-            ball.dx = -ball.dx
-        if ball.rect.top <= 0:
-            ball.bounce()
-        if ball.rect.bottom >= SCREEN_HEIGHT:
-            game_over = True  # Ball falls out of the screen (game over)
+        if ball.colliderect(paddle):
+            ball_speed[1] *= -1
 
-        # Ball and paddle collision
-        if ball.rect.colliderect(paddle.rect):
-            ball.bounce()
-
-        # Ball and brick collision
         for brick in bricks[:]:
-            if ball.rect.colliderect(brick.rect):
-                ball.bounce()
-                bricks.remove(brick)
-                score += 1
+            if ball.colliderect(brick):
+                if fireball_mode:
+                    bricks.remove(brick)
+                else:
+                    bricks.remove(brick)
+                    ball_speed[1] *= -1
+                score += 10
+                if random.random() < 0.2:
+                    p_type = random.choice(powerup_types)
+                    powerups.append(PowerUp(brick.x + brick.width // 2, brick.y, p_type))
+                break
 
-        # Draw game objects
-        paddle.draw(screen)
-        ball.draw(screen)
-        for brick in bricks:
-            brick.draw(screen)
+    for powerup in powerups[:]:
+        powerup.update()
+        powerup.draw()
+        if powerup.rect.colliderect(paddle):
+            if powerup.type == "paddle_expand":
+                paddle.width += 30
+            elif powerup.type == "multi_ball":
+                new_ball = pygame.Rect(paddle.centerx, paddle.top - ball_radius * 2, ball_radius * 2, ball_radius * 2)
+                balls.append(new_ball)
+            elif powerup.type == "fireball":
+                fireball_mode = True
+            powerups.remove(powerup)
+        elif powerup.rect.top > HEIGHT:
+            powerups.remove(powerup)
 
-        # Draw score and level
-        score_text = font.render(f"Score: {score} | Level: {level + 1}", True, WHITE)
-        screen.blit(score_text, (10, 10))
+    if not bricks:
+        waiting_for_next_level = True
 
-        # Check if the level is complete
-        if len(bricks) == 0:
-            # Show message to go to the next level
-            display_text("Level Complete! Press N to go to next level.", font, WHITE, 0)
-            pygame.display.flip()
+    pygame.draw.rect(screen, BLUE, paddle)
+    for ball in balls:
+        pygame.draw.ellipse(screen, RED if fireball_mode else WHITE, ball)
+    for brick in bricks:
+        pygame.draw.rect(screen, GREEN, brick)
 
-            # Wait for player input to go to next level
-            waiting_for_next_level = True
-            while waiting_for_next_level:
-                for event in pygame.event.get():
-                    if event.type == pygame.QUIT:
-                        waiting_for_next_level = False
-                        game_over = True
-                    if event.type == pygame.KEYDOWN:
-                        if event.key == pygame.K_n:  # Go to next level
-                            level += 1
-                            paddle, ball, bricks = reset_game(level)
-                            waiting_for_next_level = False
+    score_text = font.render(f"Score: {score}", True, WHITE)
+    lives_text = font.render(f"Lives: {lives}", True, WHITE)
+    level_text = font.render(f"Level: {level}", True, WHITE)
+    screen.blit(score_text, (10, 10))
+    screen.blit(lives_text, (WIDTH - 120, 10))
+    screen.blit(level_text, (WIDTH // 2 - 40, 10))
 
-        # Update the screen
-        pygame.display.flip()
-
-        # Set the FPS (frames per second)
-        clock.tick(60)
-
-    # Game over screen
-    display_text("Game Over! Press R to Restart or Q to Quit", font, WHITE, 0)
     pygame.display.flip()
 
-    # Wait for the user to either restart or quit
-    waiting = True
-    while waiting:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                waiting = False
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_r:  # Restart the game
-                    game_loop()
-                    waiting = False
-                elif event.key == pygame.K_q:  # Quit the game
-                    waiting = False
-
-    pygame.quit()
-
-
-# Start the game
-if __name__ == "__main__":
-    game_loop()
+pygame.quit()
