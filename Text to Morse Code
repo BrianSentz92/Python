@@ -1,0 +1,29 @@
+# Morse Code Converter
+
+# Dictionary for Morse Code representation of each letter and number
+MORSE_CODE_DICT = {
+    'A': '.-', 'B': '-...', 'C': '-.-.', 'D': '-..', 'E': '.', 'F': '..-.', 'G': '--.', 'H': '....', 'I': '..', 'J': '.---',
+    'K': '-.-', 'L': '.-..', 'M': '--', 'N': '-.', 'O': '---', 'P': '.--.', 'Q': '--.-', 'R': '.-.', 'S': '...', 'T': '-',
+    'U': '..-', 'V': '...-', 'W': '.--', 'X': '-..-', 'Y': '-.--', 'Z': '--..',
+    '1': '.----', '2': '..---', '3': '...--', '4': '....-', '5': '.....', '6': '-....', '7': '--...', '8': '---..', '9': '----.',
+    '0': '-----', ' ': '/'
+}
+
+# Function to convert text to Morse code
+def text_to_morse(text):
+    morse_code = []
+    for char in text.upper():  # Convert input to uppercase
+        if char in MORSE_CODE_DICT:
+            morse_code.append(MORSE_CODE_DICT[char])  # Append corresponding Morse code
+        else:
+            morse_code.append('?')  # If character not in Morse dictionary
+    return ' '.join(morse_code)
+
+# Function to take user input and display Morse code
+def main():
+    text = input("Enter the text to convert to Morse Code: ")
+    morse_code = text_to_morse(text)
+    print(f"Morse Code: {morse_code}")
+
+if __name__ == "__main__":
+    main()
